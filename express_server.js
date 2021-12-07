@@ -44,25 +44,32 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_new");
 });
 
-app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = {
-    shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
-  };
-  res.render("urls_show", templateVars);
-});
-
 app.get("/u/:shortURL", (req, res) => {
   var short = req.params.shortURL;
   let longURL = urlDatabase[short];
   res.redirect(longURL);
 });
 
+app.get("/urls/:id", (req, res) => {
+  let shortURL = req.params.id;
+  let longURL = urlDatabase[shortURL];
+  let templateVars = {
+    shortURL: shortURL,
+    longURL: longURL,
+  };
+  res.render("urls_show", templateVars);
+});
+
 app.post("/urls", (req, res) => {
-  console.log(req.body);
   let url = generateRandomString();
   let result = req.body.longURL;
   urlDatabase[url] = result;
+  res.redirect("/urls/");
+});
+
+app.post("/urls/:id", (req, res) => {
+  const longURL = req.body.longURL;
+  urlDatabase[req.params.id] = longURL;
   res.redirect("/urls/");
 });
 

@@ -7,9 +7,9 @@
         integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
     <title>URL - TinyApp Example</title>
 </head>
+    <%- include('partials/_header') %>
 
 <body>
-    <%- include('partials/_header') %>
     <div class="card text-center">
         <div class="card-header"></div>
         <div class="card-body">
@@ -19,6 +19,11 @@
                     <%= shortURL %>
                 </a></p>
         </div>
+        <form action="/urls/<%=shortURL%>" method="POST">
+            <label for="edit">Edit:</label>
+            <input type="text" placeholder="http://" name="longURL" id="edit"/>
+            <button class="btn btn-success" type="submit">Update</button>
+        </form>
         <div class="card-footer text-muted"></div>
     </div>
     <!-- Bootstrap JS -->
