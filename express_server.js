@@ -52,9 +52,18 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+app.get("/u/:shortURL", (req, res) => {
+  var short = req.params.shortURL;
+  let longURL = urlDatabase[short];
+  res.redirect(longURL);
+});
+
 app.post("/urls", (req, res) => {
   console.log(req.body);
-  res.send("OK");
+  let url = generateRandomString();
+  let result = req.body.longURL;
+  urlDatabase[url] = result;
+  res.redirect("/urls/");
 });
 
 function generateRandomString() {
