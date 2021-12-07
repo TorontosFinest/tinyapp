@@ -56,3 +56,15 @@ app.post("/urls", (req, res) => {
   console.log(req.body);
   res.send("OK");
 });
+
+function generateRandomString() {
+  var randomChars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  var result = "";
+  for (var i = 0; i < 6; i++) {
+    result += randomChars.charAt(
+      Math.floor(Math.random() * randomChars.length)
+    );
+  }
+  return result;
+}
