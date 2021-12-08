@@ -10,21 +10,43 @@ const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
+
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
 app.get("/", (req, res) => {
-  res.send("hi");
-});
-
-app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  let templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]] };
   res.render("urls_index", templateVars);
 });
 
+app.get("/urls", (req, res) => {
+  const templateVars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("urls_index", templateVars);
+});
+
+app.get("/register", (req, res) => {
+  res.render("register");
+});
+
 app.get("/urls/new", (req, res) => {
-  let templateVars = { username: req.cookies["username"] };
+  let templateVars = { user: users[req.cookies["user_id"]] };
   res.render("urls_new", templateVars);
 });
 
@@ -40,7 +62,7 @@ app.get("/urls/:id", (req, res) => {
   let templateVars = {
     shortURL: shortURL,
     longURL: longURL,
-    username: req.cookies["username"],
+    user: users[req.cookies["user_id"]],
   };
   res.render("urls_show", templateVars);
 });
@@ -63,13 +85,26 @@ app.post("/login", (req, res) => {
   res.redirect("/urls");
 });
 
+app.post("/register", (req, res) => {
+  const id = generateRandomString();
+  const { email, password } = req.body;
+
+  users[id] = {
+    id: id,
+    email: email,
+    password: password,
+  };
+
+  res.cookie("user_id", id);
+  res.redirect("/urls");
+});
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
   res.redirect("/urls/");
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("username", req.cookies["username"]);
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 
