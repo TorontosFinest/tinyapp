@@ -80,23 +80,30 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls/");
 });
 
-app.post("/login", (req, res) => {
-  res.cookie("username", req.body.username);
-  res.redirect("/urls");
+app.get("/login", (req, res) => {
+  res.render("login");
 });
 
 app.post("/register", (req, res) => {
   const id = generateRandomString();
   const { email, password } = req.body;
 
-  users[id] = {
-    id: id,
-    email: email,
-    password: password,
-  };
+  if (email === "" || password === "") {
+    console.log("please fill out all fields");
+    res.status(400).redirect("/register");
+  } else if (getUserEmail(email)) {
+    console.log("user in system");
+    res.status(400).redirect("/register");
+  } else {
+    users[id] = {
+      id: id,
+      email: email,
+      password: password,
+    };
 
-  res.cookie("user_id", id);
-  res.redirect("/urls");
+    res.cookie("user_id", id);
+    res.redirect("/urls");
+  }
 });
 app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[req.params.shortURL];
@@ -118,4 +125,13 @@ function generateRandomString() {
     );
   }
   return result;
+}
+
+function getUserEmail(email) {
+  for (let key in users) {
+    if (users[key].email === email) {
+      return users[key];
+    }
+  }
+  return false;
 }
