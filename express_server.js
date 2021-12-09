@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const PORT = 8080;
+const bcrypt = require("bcryptjs");
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
@@ -144,10 +145,11 @@ app.post("/register", (req, res) => {
     console.log("user in system");
     res.status(400).redirect("/register");
   } else {
+    let hashedPassword = bcrypt.hashSync(password, 10);
     users[id] = {
       id: id,
       email: email,
-      password: password,
+      password: hashedPassword,
     };
 
     res.cookie("user_id", id);
@@ -168,9 +170,9 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   const user = getUserEmail(email);
-
+  const hashedpass = bcrypt.hashSync(password, 10);
   if (user) {
-    if (email === user.email && password === user.password) {
+    if (bcrypt.compareSync(password, hashedpass)) {
       console.log("successful login");
       res.cookie("user_id", user.id);
       res.redirect("/urls");
