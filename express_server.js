@@ -22,6 +22,12 @@ const users = {
     email: "user2@example.com",
     password: "dishwasher-funk",
   },
+
+  hi: {
+    id: "hi",
+    email: "hi@hi.com",
+    password: "hi",
+  },
 };
 
 app.listen(PORT, () => {
@@ -42,7 +48,8 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  res.render("register");
+  let templateVars = { user: users[req.cookies["user_id"]] };
+  res.render("register", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
@@ -54,6 +61,10 @@ app.get("/u/:shortURL", (req, res) => {
   var short = req.params.shortURL;
   let longURL = urlDatabase[short];
   res.redirect(longURL);
+});
+app.get("/login", (req, res) => {
+  let templateVars = { user: users[req.cookies["user_id"]] };
+  res.render("login", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => {
@@ -78,10 +89,6 @@ app.post("/urls/:id", (req, res) => {
   const longURL = req.body.longURL;
   urlDatabase[req.params.id] = longURL;
   res.redirect("/urls/");
-});
-
-app.get("/login", (req, res) => {
-  res.render("login");
 });
 
 app.post("/register", (req, res) => {
@@ -110,9 +117,30 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   res.redirect("/urls/");
 });
 
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+  const user = getUserEmail(email);
+
+  if (user) {
+    if (email === user.email && password === user.password) {
+      console.log("successful login");
+      res.cookie("user_id", user.id);
+      res.redirect("/urls");
+    } else {
+      console.log("failed login, incorrect credentials");
+      res.status(403).redirect("/login");
+    }
+  } else if (email === "" && password === "") {
+    console.log("Please enter all fields");
+    res.redirect("/login");
+  } else {
+    console.log("user not in system");
+    res.status(403).redirect("/login");
+  }
+});
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
-  res.redirect("/urls");
+  res.redirect("/login");
 });
 
 function generateRandomString() {
