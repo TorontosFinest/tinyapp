@@ -49,7 +49,6 @@ app.listen(PORT, () => {
 
 app.get("/", (req, res) => {
   if (!users[req.session["user_id"]]) {
-    console.log("must be logged in to see!");
     res.redirect("/login");
   } else {
     const user = req.session["user_id"];
@@ -64,8 +63,7 @@ app.get("/", (req, res) => {
 
 app.get("/urls", (req, res) => {
   if (!users[req.session["user_id"]]) {
-    console.log("must be logged in to see!");
-    res.redirect("/login");
+    res.status(403).send("user must be logged in to view urls");
   } else {
     const user = req.session["user_id"];
     const templateVars = {
@@ -78,8 +76,12 @@ app.get("/urls", (req, res) => {
 });
 
 app.get("/register", (req, res) => {
-  let templateVars = { user: users[req.session["user_id"]] };
-  res.render("register", templateVars);
+  if (!users[req.session["user_id"]]) {
+    let templateVars = { user: users[req.session["user_id"]] };
+    res.render("register", templateVars);
+  } else {
+    res.redirect("/urls");
+  }
 });
 
 app.get("/urls/new", (req, res) => {
@@ -93,7 +95,7 @@ app.get("/urls/new", (req, res) => {
 app.get("/u/:shortURL", (req, res) => {
   let short = req.params.shortURL;
   if (!urlDatabase[short]) {
-    res.redirect("/urls/");
+    res.status(404).send(" url does not exist");
   } else {
     let longURL = urlDatabase[short].longURL;
     res.redirect(longURL);
@@ -101,14 +103,18 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  let templateVars = { user: users[req.session["user_id"]] };
-  res.render("login", templateVars);
+  if (!users[req.session["user_id"]]) {
+    let templateVars = { user: users[req.session["user_id"]] };
+    res.render("login", templateVars);
+  } else {
+    res.redirect("/urls");
+  }
 });
 
 app.get("/urls/:id", (req, res) => {
   let shortURL = req.params.id;
   if (!urlDatabase[shortURL]) {
-    return res.send(404);
+    return res.status(400).send("url does not exist");
   }
 
   if (req.session["user_id"] !== urlDatabase[shortURL]["userID"]) {
@@ -146,7 +152,7 @@ app.post("/urls/:id", (req, res) => {
     urlDatabase[req.params.id]["longURL"] = longURL;
     res.redirect("/urls/");
   } else {
-    res.send(403, "cannot modify/delete  links that arent yours");
+    res.status(400).send("forbidden access");
   }
 });
 
@@ -155,11 +161,9 @@ app.post("/register", (req, res) => {
   const { email, password } = req.body;
   const trimPass = password.trim();
   if (email === "" || password === "") {
-    console.log("please fill out all fields");
-    res.status(400).redirect("/register");
+    res.status(400).send("fields cannot be empty when registering");
   } else if (getUserByEmail(email, users)) {
-    console.log("user in system");
-    res.status(400).redirect("/register");
+    res.status(400).send("user is already in the system, go to login.");
   } else {
     let hashedPassword = bcrypt.hashSync(trimPass, 10);
     users[id] = {
@@ -186,30 +190,25 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  const trimPass = password.trim();
   const user = getUserByEmail(email, users);
-  const hashedpass = bcrypt.hashSync(trimPass, 10);
   if (email === "" && password === "") {
-    console.log("Please enter all fields");
-    res.redirect("/login");
+    res.status(404).send("both fields must be filled in");
   }
   console.log(user);
   if (user) {
     if (bcrypt.compareSync(password, user.password)) {
-      console.log("successful login");
       req.session["user_id"] = user.id;
       res.redirect("/urls");
     } else {
-      console.log("failed login, incorrect credentials");
-      res.status(403).redirect("/login");
+      res.status(403).send("failed login, please enter correct credentials");
     }
   } else {
-    res.status(403).redirect("/login");
+    res.status(404).send("user does not exist, create a user.");
   }
 });
 app.post("/logout", (req, res) => {
   req.session = null;
-  res.redirect("/login");
+  res.redirect("/urls");
 });
 
 function generateRandomString() {
