@@ -208,7 +208,6 @@ app.post("/login", (req, res) => {
   if (email === "" && password === "") {
     res.status(404).send("both fields must be filled in");
   }
-  console.log(user);
   // if the user has been found, then compare passwords.
   if (user) {
     if (bcrypt.compareSync(password, user.password)) {
