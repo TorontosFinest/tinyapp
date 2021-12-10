@@ -3,13 +3,14 @@ const app = express();
 const PORT = 8080;
 const bcrypt = require("bcryptjs");
 const bodyParser = require("body-parser");
+const { getUserByEmail } = require("./helpers");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
 const cookieSession = require("cookie-session");
 app.use(
   cookieSession({
     name: "session",
-    keys: ["guest"],
+    secret: "dwajdjgjwajdwajawj",
     maxAge: 24 * 60 * 60 * 1000,
   })
 );
@@ -47,8 +48,18 @@ app.listen(PORT, () => {
 });
 
 app.get("/", (req, res) => {
-  let templateVars = { urls: urlDatabase, user: users[req.session["user_id"]] };
-  res.render("urls_index", templateVars);
+  if (!users[req.session["user_id"]]) {
+    console.log("must be logged in to see!");
+    res.redirect("/login");
+  } else {
+    const user = req.session["user_id"];
+    const templateVars = {
+      user,
+      urls: urlsForUser(user),
+      user: users[req.session["user_id"]],
+    };
+    res.render("urls_index", templateVars);
+  }
 });
 
 app.get("/urls", (req, res) => {
@@ -142,22 +153,22 @@ app.post("/urls/:id", (req, res) => {
 app.post("/register", (req, res) => {
   const id = generateRandomString();
   const { email, password } = req.body;
-
+  const trimPass = password.trim();
   if (email === "" || password === "") {
     console.log("please fill out all fields");
     res.status(400).redirect("/register");
-  } else if (getUserEmail(email)) {
+  } else if (getUserByEmail(email, users)) {
     console.log("user in system");
     res.status(400).redirect("/register");
   } else {
-    let hashedPassword = bcrypt.hashSync(password, 10);
+    let hashedPassword = bcrypt.hashSync(trimPass, 10);
     users[id] = {
       id: id,
       email: email,
       password: hashedPassword,
     };
 
-    res.session("user_id", id);
+    req.session["user_id"] = id;
     res.redirect("/urls");
   }
 });
@@ -173,11 +184,18 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const { email, password } = req.body;
-  const user = getUserEmail(email);
-  const hashedpass = bcrypt.hashSync(password, 10);
+  const email = req.body.email;
+  const password = req.body.password;
+  const trimPass = password.trim();
+  const user = getUserByEmail(email, users);
+  const hashedpass = bcrypt.hashSync(trimPass, 10);
+  if (email === "" && password === "") {
+    console.log("Please enter all fields");
+    res.redirect("/login");
+  }
+  console.log(user);
   if (user) {
-    if (bcrypt.compareSync(password, hashedpass)) {
+    if (bcrypt.compareSync(password, user.password)) {
       console.log("successful login");
       req.session["user_id"] = user.id;
       res.redirect("/urls");
@@ -185,11 +203,7 @@ app.post("/login", (req, res) => {
       console.log("failed login, incorrect credentials");
       res.status(403).redirect("/login");
     }
-  } else if (email === "" && password === "") {
-    console.log("Please enter all fields");
-    res.redirect("/login");
   } else {
-    console.log("user not in system");
     res.status(403).redirect("/login");
   }
 });
@@ -218,13 +232,4 @@ function urlsForUser(id) {
     }
   }
   return obj;
-}
-
-function getUserEmail(email) {
-  for (let key in users) {
-    if (users[key].email === email) {
-      return users[key];
-    }
-  }
-  return false;
 }
